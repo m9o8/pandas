@@ -25,11 +25,19 @@ jobs:
       id: update-deprecation-issue
       with:
         script: |
-          body = await github.rest.issues.get({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: ${{ env.DEPRECATION_TRACKER_ISSUE }},
-          })
+          try {
+            body = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ env.DEPRECATION_TRACKER_ISSUE }},
+            })
+          } catch (error) {
+            if (error.status === 404) {
+              console.log("Deprecation tracker issue not found, skipping update.");
+              return;
+            }
+            throw error;
+          }
           body = body["data"]["body"];
           linkedPRs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
             owner: context.repo.owner,
